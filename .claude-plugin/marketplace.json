@@ -9,7 +9,7 @@
       "name": "grok-review",
       "source": "./",
       "description": "Second opinions from Grok Build via the local grok CLI — read-only, single-shot by default. Requires grok (authenticated) and jq installed locally; reviews spend your Grok quota.",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "homepage": "https://github.com/roy7/claude-skill-grok-review"
     }
   ]

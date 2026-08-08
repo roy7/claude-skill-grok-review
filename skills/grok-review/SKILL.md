@@ -2,7 +2,7 @@
 name: grok-review
 description: Get a second opinion from Grok Build on a plan, design doc, diff, or piece of code, via the local `grok` CLI (uses the user's Grok login — subscription or API key, whatever `grok` is authenticated with). Single-shot review by default; escalate to a multi-round baton loop only when the user asks to continue the argument.
 argument-hint: <file | doc path | "diff" | freeform question>
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash(grok:*), Bash(jq:*), Bash(command:*)
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(grok:*), Bash(jq:*), Bash(command:*), Bash(git:*)
 ---
 
 # Grok review — second opinion via the Grok Build CLI
@@ -42,8 +42,9 @@ Drive the locally installed `grok` CLI headlessly to get an independent review f
 
 1. Create a review doc at `<untracked-dir>/grok-reviews/YYYY-MM-DD-<slug>.md` — review docs never get committed. Choosing `<untracked-dir>`: use an **existing** gitignored working directory if the project already has one (e.g. `.scratch/`, `tmp/`, `.claude/work/`). If none exists, **ask the user** whether to (a) create a dir and add it to `.gitignore`, or (b) use a temp path outside the repo. Do **not** edit `.gitignore` without an explicit yes. On (b), put the **absolute path** in the user-facing report and note the trail is ephemeral. Contents:
    - Header: topic, date, `grok-session: <SID>`.
-   - Grok's round-1 findings, then inline replies using this convention:
-     - `> **[GROK R1-3]** <finding>` followed by `**[CLAUDE]** <reply>` and a status tag: `RESOLVED / DISPUTED / USER-CALL`.
+   - Grok's round-1 findings, then inline replies. Tags carry the round number they were written in — `[GROK R1]`, `[GROK R2]`, `[GROK R3]` (never a range) — with finding numbers appended as needed:
+     - `> **[GROK R1.3]** <third finding from round 1>`
+     - `**[CLAUDE R1]** <reply>` plus a status tag: `RESOLVED / DISPUTED / USER-CALL`.
 2. Resume the same Grok session with the doc:
 
    ```bash
@@ -64,6 +65,6 @@ Drive the locally installed `grok` CLI headlessly to get an independent review f
 - Every call spends the user's Grok quota: default single-shot; never loop without the user asking.
 - Grok is read-only, always (allowlist + `--disallowed-tools` denylist together — see the invoke notes). Claude is the only agent that edits the working tree.
 - Everything in the brief, plus any files Grok reads, leaves the machine via the user's Grok authentication to xAI. Never put secrets or `.env*` contents in the brief, and don't paste diffs containing PII or customer data without flagging it to the user first.
-- The brief ban isn't enough on its own: Grok can `read_file` any path in the cwd tree itself. Don't point Grok at secret-bearing paths, and if the repo likely contains secrets, PII, or customer data anywhere Grok might read, confirm with the user before invoking.
+- The brief ban isn't enough on its own: Grok can `read_file` any path in the cwd tree itself. Don't point Grok at secret-bearing paths, and if the repo likely contains secrets, PII, or customer data anywhere Grok might read, confirm with the user before invoking. Optional hardening when secret files are known to exist in the tree: add a path deny rule, e.g. `--deny 'Read(**/.env*)'` (verify the rule syntax against the installed CLI's `--help` before relying on it).
 - If `grok` exits non-zero or hangs past timeout, report the failure verbatim — never silently substitute a different Grok access path (other tools may bill differently).
 - If `--resume` errors (session expired/missing), say so and offer a fresh single-shot with the review doc as context — don't quietly start a new thread pretending it's the old one.
