@@ -14,7 +14,7 @@ Why bother: cross-model review catches things same-model self-review doesn't, an
 **As a plugin (recommended):**
 
 ```
-/plugin marketplace add <your-github-user>/claude-skill-grok-review
+/plugin marketplace add roy7/claude-skill-grok-review
 /plugin install grok-review
 ```
 
