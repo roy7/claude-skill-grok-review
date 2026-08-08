@@ -25,37 +25,43 @@ Drive the locally installed `grok` CLI headlessly to get an independent review f
 2. **Invoke** (from the repo root, read-only via tool allowlist, JSON output so you get the session ID back):
 
    ```bash
-   grok --prompt-file <brief> \
+   grok --prompt-file <brief> --verbatim \
      --tools "read_file,grep,list_dir" \
      --disallowed-tools "search_tool,use_tool,Agent,run_terminal_cmd,search_replace" \
+     --deny Bash --deny Edit --deny Write --deny MCPTool \
+     --no-subagents \
      --disable-web-search --max-turns 30 \
-     --output-format json > <scratchpad>/grok-out.json 2><scratchpad>/grok-err.log
+     --output-format json > <scratchpad>/grok-out.json 2><scratchpad>/grok-err.log; echo "grok_exit=$?"
    ```
 
-   - The allowlist alone is NOT read-only: MCP meta-tools (`search_tool`, `use_tool`) remain available unless denied, and could drive whatever MCP servers the user has connected. The `--disallowed-tools` denylist is what actually makes the call read-only — always pass both. Denying `run_terminal_cmd` and `search_replace` is defense-in-depth: if `--tools` is ever ignored or its IDs drift, shell and edit stay blocked anyway. (Do NOT use `--permission-mode plan` as a substitute — headless plan mode stalls after one narration line.) **One writer per repo: Claude.** Never grant Grok edit/shell tools.
-   - If the review genuinely needs external facts, add `web_search` (and `web_fetch` if needed) to `--tools` AND drop `--disable-web-search` — with `--tools` set, only listed tools exist, so dropping the flag alone re-enables nothing.
+   - The allowlist alone is NOT read-only: MCP meta-tools (`search_tool`, `use_tool`) remain available unless denied, and could drive whatever MCP servers the user has connected. Worse, the tool lists **fail open**: unmappable `--tools` entries make the CLI keep the FULL toolset, and unmatched `--disallowed-tools` entries just log a warning — so if tool IDs ever drift, both lists silently stop protecting you. That's why the `--deny` permission rules are layered on top: they use a different, stable namespace (`Bash`, `Edit`, `Write`, `MCPTool` — a bare prefix matches all invocations of that type) and deny wins over every other rule. `--no-subagents` likewise beats relying on the `Agent` denylist entry. Always pass all three layers. (Do NOT use `--permission-mode plan` as a substitute — headless plan mode stalls after one narration line.) **One writer per repo: Claude.** Never grant Grok edit/shell tools.
+   - `--verbatim` sends the brief exactly as written — without it, headless prompt preprocessing may expand `@path` or leading-`/` tokens that review briefs routinely contain.
+   - If the review genuinely needs external facts, add `web_search` to `--tools` AND drop `--disable-web-search` — with `--tools` set, only listed tools exist, so dropping the flag alone re-enables nothing. `web_search` runs inline and is headless-safe; `web_fetch` can STALL a headless run on its domain-approval prompt — if you truly need it, pair it with `--allow 'WebFetch(domain:<host>)'` for each expected host.
    - Timeout: set the **Bash tool's** `timeout` parameter to `600000` (10 minutes) — that is a Claude Code tool option, not a `grok` flag; do not pass any timeout flag to `grok`. Repo-reading reviews are slow.
-3. **Parse:** `jq -r '.text'` for the review, `jq -r '.sessionId'` for the resume handle (`SID`), `.stopReason` should be `end_turn` (if `max_turn_requests`, the review is truncated — say so). If `.text` is missing/empty or exit ≠ 0, report the failure from BOTH streams: on errors grok emits `{"type":"error","message":...}` on **stdout** (so `jq -r '.message // .'` the out file), while stderr is mostly log noise — check `grok-err.log` too, but the actionable message is usually in the out file. Don't improvise a summary from partial output.
+3. **Parse:** `jq -r '.text'` for the review, `jq -r '.sessionId'` for the resume handle (`SID`). Branch on `.stopReason`: `end_turn` is the only clean outcome; `max_tokens` and `max_turn_requests` mean the review is TRUNCATED (say so and offer to continue — `max_tokens` is the likeliest truncation for a long review); `refusal` / `cancelled` are failures. The exit code is only visible via the `grok_exit=` line echoed in the same Bash call — shell state does not survive between calls, so never check `$?` later. If `.text` is missing/empty or `grok_exit` ≠ 0, report the failure from BOTH streams: on errors grok emits `{"type":"error","message":...}` on **stdout** (so `jq -r '.message // .'` the out file), while stderr is mostly log noise — check `grok-err.log` too, but the actionable message is usually in the out file. Don't improvise a summary from partial output.
 4. **Report back:** relay Grok's verdict and numbered findings **verbatim (or faithfully condensed) first**, then add Claude's own take as a clearly separated second section (agree / disagree / user-call per finding) — don't interleave rebuttals into Grok's findings; the user should see the independent opinion before the author's defense. Never silently apply Grok's fixes — findings are input, the user decides. Record the `SID` in your report so escalation is possible.
 
 ## Multi-round baton loop (ESCALATION — only when the user says continue)
 
 1. Create a review doc at `<untracked-dir>/grok-reviews/YYYY-MM-DD-<slug>.md` — review docs never get committed. Choosing `<untracked-dir>`: use an **existing** gitignored working directory if the project already has one (e.g. `.scratch/`, `tmp/`, `.claude/work/`). If none exists, **ask the user** whether to (a) create a dir and add it to `.gitignore`, or (b) use a temp path outside the repo. Do **not** edit `.gitignore` without an explicit yes. On (b), put the **absolute path** in the user-facing report and note the trail is ephemeral. Contents:
    - Header: topic, date, `grok-session: <SID>`.
-   - Grok's round-1 findings, then inline replies. Tags carry the round number they were written in — `[GROK R1]`, `[GROK R2]`, `[GROK R3]` (never a range) — with finding numbers appended as needed:
+   - Grok's round-1 findings, then inline replies. Tags carry the round number they were written in: the initial single-shot review is R1 and the resume rounds are R2–R4 — never a range like `R1-3` — with finding numbers appended as needed:
      - `> **[GROK R1.3]** <third finding from round 1>`
      - `**[CLAUDE R1]** <reply>` plus a status tag: `RESOLVED / DISPUTED / USER-CALL`.
 2. Resume the same Grok session with the doc:
 
    ```bash
-   grok --resume "$SID" -p "Read <absolute doc path>. Respond to each CLAUDE reply inline; concede or sharpen each DISPUTED item. Same verdict format." \
+   SID=$(jq -r '.sessionId' <scratchpad>/grok-out.json) && grok --resume "$SID" \
+     -p "Read <absolute doc path>. Respond to each CLAUDE reply inline; concede or sharpen each DISPUTED item. Same verdict format." \
      --tools "read_file,grep,list_dir" \
      --disallowed-tools "search_tool,use_tool,Agent,run_terminal_cmd,search_replace" \
+     --deny Bash --deny Edit --deny Write --deny MCPTool \
+     --no-subagents \
      --disable-web-search --max-turns 30 \
-     --output-format json > <scratchpad>/grok-out-r<N>.json 2><scratchpad>/grok-err-r<N>.log
+     --output-format json > <scratchpad>/grok-out-r<N>.json 2><scratchpad>/grok-err-r<N>.log; echo "grok_exit=$?"
    ```
 
-   Always give Grok the doc's **absolute path** in the resume prompt (and in the doc header) — a relative path fails whenever the doc lives outside the repo cwd. Every resume call gets the SAME capture and parse treatment as the single-shot: redirect stdout/stderr to fresh scratchpad files, check exit code, `jq -r '.text'` / `.stopReason` (`end_turn`, else report truncation), and **re-read `.sessionId` each round** — update `SID` if it changed rather than assuming it's stable. On failure, report from both the out file (`.message`) and the error log; don't improvise.
+   `SID` MUST be set in the same Bash call that uses it (as above, from the previous round's out file) or substituted as a literal string — shell variables do NOT survive between Bash calls, and an empty `--resume ""` doesn't error: it falls back to title-matching in the cwd and can silently resume the WRONG session. Always give Grok the doc's **absolute path** in the resume prompt (and in the doc header) — a relative path fails whenever the doc lives outside the repo cwd. Every resume call gets the SAME capture and parse treatment as the single-shot: redirect stdout/stderr to fresh scratchpad files, check the echoed `grok_exit`, `jq -r '.text'` / `.stopReason` (`end_turn`, else truncated/failed per the single-shot rules), and **re-read `.sessionId` each round** — update `SID` if it changed rather than assuming it's stable. On failure, report from both the out file (`.message`) and the error log; don't improvise. If Grok reports the review doc "is ignored by .gitignore and cannot be read", the user has `respect_gitignore` enabled in their grok config — move the doc to a non-ignored path or include its content inline in `-p`.
 
 3. Fold Grok's responses back into the doc each round. **Cap at 3 resume rounds after the initial review** (4 Grok invocations total) — if still disputed, stop and present both positions to the user. Two agents politely agreeing burns quota; converge or escalate.
 4. When done, leave the doc in place as the trail, and summarize the resolution (what changed, what was disputed, what went to the user) in your report.
@@ -68,3 +74,4 @@ Drive the locally installed `grok` CLI headlessly to get an independent review f
 - The brief ban isn't enough on its own: Grok can `read_file` any path in the cwd tree itself. Don't point Grok at secret-bearing paths, and if the repo likely contains secrets, PII, or customer data anywhere Grok might read, confirm with the user before invoking. Optional hardening when secret files are known to exist in the tree: add a path deny rule, e.g. `--deny 'Read(**/.env*)'` (verify the rule syntax against the installed CLI's `--help` before relying on it).
 - If `grok` exits non-zero or hangs past timeout, report the failure verbatim — never silently substitute a different Grok access path (other tools may bill differently).
 - If `--resume` errors (session expired/missing), say so and offer a fresh single-shot with the review doc as context — don't quietly start a new thread pretending it's the old one.
+- Grok also loads the target repo's own configuration from the cwd — `.grok/config.toml`, Claude-compatible `.claude/settings.json`, and any MCP servers or plugins they declare. Hooks are gated behind folder trust and `--tools`/`--deny` still bound the toolset, but reviewing a repo you don't control is a materially different act than reviewing your own: check those files (or run `grok inspect`) first.
