@@ -8,7 +8,9 @@
     {
       "name": "grok-review",
       "source": "./",
-      "description": "Second opinions from Grok Build via the local grok CLI — read-only, single-shot by default."
+      "description": "Second opinions from Grok Build via the local grok CLI — read-only, single-shot by default.",
+      "version": "0.2.1",
+      "homepage": "https://github.com/roy7/claude-skill-grok-review"
     }
   ]
 }
