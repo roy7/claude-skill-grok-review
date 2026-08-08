@@ -3,6 +3,7 @@
   "owner": {
     "name": "Jonathan Roy"
   },
+  "description": "Marketplace for the grok-review skill: second opinions from Grok Build via the local grok CLI.",
   "plugins": [
     {
       "name": "grok-review",
