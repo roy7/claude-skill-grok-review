@@ -36,7 +36,7 @@ After the single-shot review, say "continue the argument with Grok" to escalate 
 ## How it works
 
 - Single-shot: `grok --prompt-file <brief> --tools "read_file,grep,list_dir" --disallowed-tools "search_tool,use_tool,Agent,run_terminal_cmd,search_replace" --disable-web-search --max-turns 30 --output-format json` — a fresh Grok session per review, session ID captured for optional follow-up. The denylist matters: without it, Grok's MCP meta-tools could reach any MCP servers you have connected; denying shell/edit on top is defense-in-depth in case the allowlist ever drifts.
-- Escalation: a shared review doc with `[GROK]` / `[CLAUDE]` inline comments and `RESOLVED / DISPUTED / USER-CALL` status tags; Grok's side resumes via `--resume <sessionId>` so it keeps its own context.
+- Escalation: a shared review doc with round-numbered `[GROK R1-3]` / `[CLAUDE]` inline comments and `RESOLVED / DISPUTED / USER-CALL` status tags; Grok's side resumes via `--resume <sessionId>` so it keeps its own context. Capped at 3 resume rounds after the initial review.
 - Guardrails: Grok never gets edit or shell tools (one writer per repo: Claude), briefs must be neutrally framed (no arguing for Claude's preferred outcome), secrets stay out of briefs, failures are reported rather than papered over.
 
 ## Caveats

@@ -2,11 +2,14 @@
 name: grok-review
 description: Get a second opinion from Grok Build on a plan, design doc, diff, or piece of code, via the local `grok` CLI (uses the user's Grok login — subscription or API key, whatever `grok` is authenticated with). Single-shot review by default; escalate to a multi-round baton loop only when the user asks to continue the argument.
 argument-hint: <file | doc path | "diff" | freeform question>
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(grok:*), Bash(jq:*), Bash(command:*)
 ---
 
 # Grok review — second opinion via the Grok Build CLI
 
 Drive the locally installed `grok` CLI headlessly to get an independent review from a different model family. The CLI runs in the repo cwd, so Grok reads real code itself — point it at paths instead of pasting files.
+
+**Review target:** the invocation arguments name what to review (a file/doc path, `diff`, or a freeform question) — they arrive as an `ARGUMENTS:` line or via `$ARGUMENTS` substitution depending on the harness. If no target or question was provided, ask the user what to review before doing anything else.
 
 **Preflight (before the first call):** check `command -v grok` and `command -v jq` — both are required (`jq` parses the JSON output). If `grok` is missing, or a call fails with an authentication error, tell the user to install it / run `grok login` instead of substituting a different Grok access path.
 
@@ -17,7 +20,7 @@ Drive the locally installed `grok` CLI headlessly to get an independent review f
    - **Neutral framing:** state the decision, the alternatives considered, and open risks — do NOT argue for a preferred outcome in the brief; a stacked brief buys agreement, not a second opinion. If Claude has a position, disclose it in one labeled line at the end ("Claude currently leans X because Y") rather than weaving it through the framing.
    - The specific question(s) — ask for a verdict (`pass / pass-with-fixes / fail`) plus numbered findings, most severe first.
    - Pointers to repo paths to read (Grok reads them itself — don't paste whole files; paste only diffs or excerpts that aren't on disk).
-   - For diff reviews: paste `git diff` output AND state the base SHA + whether the project's quality gates (typecheck / tests / build) passed or weren't run — Grok has no shell, so it can't verify any of that itself.
+   - For diff reviews: paste `git diff` output AND state the base SHA + whether the project's quality gates (typecheck / tests / build) passed or weren't run — Grok has no shell, so it can't verify any of that itself. Keep pastes bounded: if the diff is large (roughly >400 lines), paste `git diff --stat` plus only the hot hunks and point at the changed paths for Grok to read on disk; ask the user before pasting anything huge (it all goes to xAI).
    - Instruction: "Be adversarial; if you agree, say so briefly rather than inventing objections."
 2. **Invoke** (from the repo root, read-only via tool allowlist, JSON output so you get the session ID back):
 
@@ -53,7 +56,7 @@ Drive the locally installed `grok` CLI headlessly to get an independent review f
 
    Always give Grok the doc's **absolute path** in the resume prompt (and in the doc header) — a relative path fails whenever the doc lives outside the repo cwd. Every resume call gets the SAME capture and parse treatment as the single-shot: redirect stdout/stderr to fresh scratchpad files, check exit code, `jq -r '.text'` / `.stopReason` (`end_turn`, else report truncation), and **re-read `.sessionId` each round** — update `SID` if it changed rather than assuming it's stable. On failure, report from both the out file (`.message`) and the error log; don't improvise.
 
-3. Fold Grok's responses back into the doc each round. **Cap at 3 rounds** — if still disputed, stop and present both positions to the user. Two agents politely agreeing burns quota; converge or escalate.
+3. Fold Grok's responses back into the doc each round. **Cap at 3 resume rounds after the initial review** (4 Grok invocations total) — if still disputed, stop and present both positions to the user. Two agents politely agreeing burns quota; converge or escalate.
 4. When done, leave the doc in place as the trail, and summarize the resolution (what changed, what was disputed, what went to the user) in your report.
 
 ## Guardrails
