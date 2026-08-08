@@ -1,8 +1,12 @@
 {
   "name": "grok-review",
   "description": "Second opinions from Grok Build: Claude drives the local grok CLI headlessly for read-only design/plan/diff reviews — single-shot by default, multi-round baton loop on request.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Jonathan Roy"
-  }
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/roy7/claude-skill-grok-review",
+  "repository": "https://github.com/roy7/claude-skill-grok-review",
+  "keywords": ["code-review", "grok", "second-opinion", "cross-model", "skill"]
 }
