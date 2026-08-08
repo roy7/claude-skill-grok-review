@@ -1,0 +1,13 @@
+{
+  "name": "grok-review-marketplace",
+  "owner": {
+    "name": "Jonathan Roy"
+  },
+  "plugins": [
+    {
+      "name": "grok-review",
+      "source": "./",
+      "description": "Second opinions from Grok Build via the local grok CLI — read-only, single-shot by default."
+    }
+  ]
+}
