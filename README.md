@@ -33,12 +33,12 @@ Why bother: cross-model review catches things same-model self-review doesn't, an
 
 Or just ask in plain language: "get Grok's take on this plan."
 
-After the single-shot review, say "continue the argument with Grok" to escalate to the multi-round loop (capped at 3 rounds; unresolved disputes come back to you with both positions).
+After the single-shot review, say "continue the argument with Grok" to escalate to the multi-round loop (capped at 3 resume rounds after the initial review; unresolved disputes come back to you with both positions).
 
 ## How it works
 
-- Single-shot: `GROK_CLAUDE_SKILLS_ENABLED=false GROK_DISABLE_AUTOUPDATER=1 grok --prompt-file <brief> --verbatim --tools "read_file,grep,list_dir" --disallowed-tools "search_tool,use_tool,Agent,run_terminal_cmd,search_replace" --deny Bash --deny Edit --deny Write --deny MCPTool --no-subagents --no-memory --sandbox read-only --disable-web-search --max-turns 30 --output-format json` — a fresh Grok session per review, session ID captured for optional follow-up. Four read-only layers on purpose: the tool allowlist and denylist fail open if their IDs ever drift, permission `--deny` rules (a stable namespace where deny always wins) back them up, and the kernel sandbox backstops all three where the OS supports it. `--no-memory` keeps the second opinion independent of Grok's cross-session memory.
-- Escalation: a shared review doc with round-numbered `[GROK R1]` / `[CLAUDE R1]` inline comments and `RESOLVED / DISPUTED / USER-CALL` status tags; Grok's side resumes via `--resume <sessionId>` so it keeps its own context. Capped at 3 resume rounds after the initial review.
+- Single-shot: `env GROK_CLAUDE_SKILLS_ENABLED=false GROK_DISABLE_AUTOUPDATER=1 grok --prompt-file <brief> --verbatim --tools "read_file,grep,list_dir" --disallowed-tools "search_tool,use_tool,Agent,run_terminal_cmd,search_replace" --deny Bash --deny Edit --deny Write --deny MCPTool --no-subagents --no-memory --sandbox read-only --disable-web-search --max-turns 30 --output-format json` — a fresh Grok session per review, session ID captured for optional follow-up. Four read-only layers on purpose: the tool allowlist and denylist fail open if their IDs ever drift, permission `--deny` rules (a stable namespace where deny always wins) back them up, and the kernel sandbox backstops all three where the OS supports it. `--no-memory` keeps the second opinion independent of Grok's cross-session memory.
+- Escalation: a shared review doc with round-and-finding-numbered `[GROK R1.3]` / `[CLAUDE R1]` inline comments (never ranges like `R1-3`) and `RESOLVED / DISPUTED / USER-CALL` status tags; Grok's side resumes via `--resume <sessionId>` so it keeps its own context. Capped at 3 resume rounds after the initial review (4 Grok invocations total).
 - Guardrails: Grok never gets edit or shell tools (one writer per repo: Claude), briefs must be neutrally framed (no arguing for Claude's preferred outcome), secrets stay out of briefs, failures are reported rather than papered over.
 
 ## Caveats
