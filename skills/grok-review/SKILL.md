@@ -1,6 +1,6 @@
 ---
 name: grok-review
-description: Get a second opinion from Grok Build on a plan, design doc, diff, or piece of code, via the local `grok` CLI (uses the user's Grok login — subscription or API key, whatever `grok` is authenticated with). Single-shot review by default; escalate to a multi-round baton loop only when the user asks to continue the argument.
+description: Get a second opinion from Grok on a plan, design doc, diff, or piece of code. Use when the user asks what Grok thinks, wants Grok to review something, or asks for a cross-model second opinion / sanity check from a different model. Drives the local `grok` CLI headlessly, read-only. Single-shot review by default; escalate to the multi-round baton loop only when the user asks to continue the argument.
 argument-hint: <file | doc path | "diff" | freeform question>
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(grok:*), Bash(jq:*), Bash(command:*), Bash(git:*)
 ---
