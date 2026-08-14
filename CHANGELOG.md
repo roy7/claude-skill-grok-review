@@ -2,6 +2,10 @@
 
 Notable changes to the grok-review plugin. Versions are pinned in `.claude-plugin/plugin.json`; installed users receive an update when that version bumps.
 
+## 0.3.3 — 2026-08-14
+
+- **Cursor-compatible skill dirs are now blocked too:** `GROK_CURSOR_SKILLS_ENABLED=false` joins the env prefix, closing the last documented skill-discovery path from the target repo (the var is documented in the grok CLI's bundled user guide rather than `--help`; flagged by Grok in the round-8 review).
+
 ## 0.3.2 — 2026-08-14
 
 Pre-marketplace-submission round: fixes from a cold review by Grok 4.6 (round 8) plus a fresh Claude review.
