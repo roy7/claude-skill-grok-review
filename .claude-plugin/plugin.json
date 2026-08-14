@@ -1,7 +1,7 @@
 {
   "name": "grok-review",
   "description": "Second opinions from Grok Build: Claude drives the local grok CLI headlessly for read-only design/plan/diff reviews — single-shot by default, multi-round baton loop on request. Requires the separately installed grok CLI (authenticated via grok login) and jq; reviews spend your Grok subscription/API quota.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": {
     "name": "Jonathan Roy"
   },

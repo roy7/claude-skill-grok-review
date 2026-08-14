@@ -2,6 +2,17 @@
 
 Notable changes to the grok-review plugin. Versions are pinned in `.claude-plugin/plugin.json`; installed users receive an update when that version bumps.
 
+## 0.3.2 — 2026-08-14
+
+Pre-marketplace-submission round: fixes from a cold review by Grok 4.6 (round 8) plus a fresh Claude review.
+
+- **The sandbox-on-resume contradiction is gone.** The invoke notes still carried the old "pass `--sandbox` on both calls or neither" rule that 0.3.1 had already reversed in the resume section; the file now teaches one rule — never pass `--sandbox` on resume, the session's saved profile applies automatically.
+- **The review is much harder for the target repo's config to steer.** `--no-plan --permission-mode default` pin the session policy (a repo `.claude/settings.json` with `defaultMode: plan` could reproduce the headless stall), `GROK_SANDBOX=off` accompanies any run that omits `--sandbox`, and the brief now tells Grok that the repo's own `CLAUDE.md`/agent-instruction files don't bind its verdict.
+- **Branch/PR reviews:** `/grok-review diff <base>` reviews a branch against its merge-base (`git diff <base>...HEAD`), not just the working tree.
+- Honest read-reach wording: the `read-only` sandbox restricts writes, not reads — Grok can read outside the repo, and path `--deny 'Read(...)'` rules must be repeated on every resume (they aren't saved with the session, unlike the sandbox profile).
+- Fewer first-run permission prompts: the auth preflight and exit-code echo now use allowlisted commands (`ls`, `test`, `echo` added to `allowed-tools`).
+- README: documented that plugin updates require `/plugin update` (they are not automatic).
+
 ## 0.3.1 — 2026-08-12
 
 Fixes from a cold review by Grok 4.6.
