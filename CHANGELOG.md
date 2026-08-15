@@ -2,6 +2,13 @@
 
 Notable changes to the grok-review plugin. Versions are pinned in `.claude-plugin/plugin.json`; installed users receive an update when that version bumps.
 
+## 0.3.4 — 2026-08-15
+
+A context-cost round: same reviews, noticeably cheaper on the Claude side.
+
+- **Diffs are no longer pasted into the brief.** The diff now goes to a scratchpad file (`git diff HEAD > .../review.diff`) and Grok reads it from disk — verified live that `read_file` reaches absolute paths outside the repo. Previously the diff landed in Claude's context twice (once as command output, once as the brief it wrote), which on a big change was the single largest cost of a review. The ">400 lines, paste only the hot hunks" workaround is gone with it: Grok now sees the whole diff regardless of size, and you still get told how big it is before it ships to xAI.
+- **The escalation path only loads when you escalate.** The multi-round baton loop moved to `references/escalation.md`, read on demand instead of on every single-shot review; SKILL.md is ~18% smaller in the always-loaded path.
+
 ## 0.3.3 — 2026-08-14
 
 - **Cursor-compatible skill dirs are now blocked too:** `GROK_CURSOR_SKILLS_ENABLED=false` joins the env prefix, closing the last documented skill-discovery path from the target repo (the var is documented in the grok CLI's bundled user guide rather than `--help`; flagged by Grok in the round-8 review).
