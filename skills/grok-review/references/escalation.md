@@ -7,7 +7,7 @@ Load and follow this file **only when the user asks to continue the argument** a
    - Grok's round-1 findings, then inline replies. Tags carry the round number they were written in: the initial single-shot review is R1 and the resume rounds are R2–R4 — never a range like `R1-3` — with finding numbers appended as needed:
      - `> **[GROK R1.3]** <third finding from round 1>`
      - `**[CLAUDE R1]** <reply>` plus a status tag: `RESOLVED / DISPUTED / USER-CALL`.
-2. Resume the same Grok session with the doc:
+2. Resume the same Grok session with the doc — launched as a **background** Bash call (`run_in_background: true`, no Bash `timeout` parameter), same as the single-shot and for the same reason: resume rounds re-read the repo and can overrun a foreground timeout. Wait for the completion notification; don't poll, don't kill on elapsed time (grok at ~0% CPU is blocked on xAI inference, not hung), and give any retry fresh capture filenames:
 
    ```bash
    env GROK_CLAUDE_SKILLS_ENABLED=false GROK_CURSOR_SKILLS_ENABLED=false GROK_DISABLE_AUTOUPDATER=1 \

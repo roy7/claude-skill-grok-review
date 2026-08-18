@@ -2,6 +2,14 @@
 
 Notable changes to the grok-review plugin. Versions are pinned in `.claude-plugin/plugin.json`; installed users receive an update when that version bumps.
 
+## 0.3.5 — 2026-08-18
+
+Fixes a real field incident: a 23-loop review ran 9m54s against the invocation's 10-minute timeout — the call was killed as grok finished, and the blind retry burned a second helping of Grok quota reviewing the same thing.
+
+- **Reviews no longer die at 10 minutes.** The grok invocation now launches as a background Bash call instead of a foreground call capped at the Bash tool's hard 600-second maximum. Slow xAI days (25–50 s per inference loop was observed live) can push an ordinary repo-reading review past 10 minutes of near-zero-CPU waiting; that's now fine — and Claude can keep working on other parts of your task while the review runs.
+- **A slow review is no longer mistaken for a hung one.** The skill now states explicitly: grok at ~0% CPU is blocked on xAI inference, not stuck — never kill or relaunch on elapsed time alone, and never relaunch into the same capture files (the incident's retry truncated the first run's logs while it was still finishing; only a surviving file descriptor saved the output). Retries, when genuinely needed, get fresh filenames and a check of whether the previous attempt's output is already complete.
+- The same background treatment applies to escalation resume rounds in `references/escalation.md`.
+
 ## 0.3.4 — 2026-08-15
 
 A context-cost round: same reviews, noticeably cheaper on the Claude side.
