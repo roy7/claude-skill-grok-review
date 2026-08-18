@@ -2,6 +2,13 @@
 
 Notable changes to the grok-review plugin. Versions are pinned in `.claude-plugin/plugin.json`; installed users receive an update when that version bumps.
 
+## 0.3.6 — 2026-08-18
+
+Keeps memory isolation working on current grok CLIs.
+
+- **Memory isolation survives the CLI's flag removal.** grok 1.0.5 removed the `--no-memory` flag (memory control moved to the `GROK_MEMORY` env var, per the CLI's bundled `13-memory.md`); under the skill's probe-and-skip rule the flag was being silently omitted, leaving the second opinion unprotected against a user-enabled cross-session memory. `GROK_MEMORY=0` now rides the env prefix on every call (single-shot and resume) — stronger than the old flag: no probing needed, and it force-disables memory even when the user's TOML or remote settings enable it. Caught live when a smoke-test preflight flagged the missing flag.
+- README "verified against" caveat updated to `grok 1.0.5`, with `GROK_MEMORY` added to the list of things that may drift.
+
 ## 0.3.5 — 2026-08-18
 
 Fixes a real field incident: a 23-loop review ran 9m54s against the invocation's 10-minute timeout — the call was killed as grok finished, and the blind retry burned a second helping of Grok quota reviewing the same thing.

@@ -10,13 +10,13 @@ Load and follow this file **only when the user asks to continue the argument** a
 2. Resume the same Grok session with the doc — launched as a **background** Bash call (`run_in_background: true`, no Bash `timeout` parameter), same as the single-shot and for the same reason: resume rounds re-read the repo and can overrun a foreground timeout. Wait for the completion notification; don't poll, don't kill on elapsed time (grok at ~0% CPU is blocked on xAI inference, not hung), and give any retry fresh capture filenames:
 
    ```bash
-   env GROK_CLAUDE_SKILLS_ENABLED=false GROK_CURSOR_SKILLS_ENABLED=false GROK_DISABLE_AUTOUPDATER=1 \
+   env GROK_CLAUDE_SKILLS_ENABLED=false GROK_CURSOR_SKILLS_ENABLED=false GROK_DISABLE_AUTOUPDATER=1 GROK_MEMORY=0 \
    grok --resume "<SID>" \
      -p "Read <absolute doc path>. Respond to each CLAUDE reply inline; concede or sharpen each DISPUTED item. Same verdict format." \
      --tools "read_file,grep,list_dir" \
      --disallowed-tools "search_tool,use_tool,Agent,run_terminal_cmd,search_replace" \
      --deny Bash --deny Edit --deny Write --deny MCPTool \
-     --no-subagents --no-memory --no-plan --permission-mode default \
+     --no-subagents --no-plan --permission-mode default \
      --disable-web-search --max-turns 30 \
      --output-format json > <scratchpad>/grok-out-r<N>.json 2><scratchpad>/grok-err-r<N>.log; echo "grok_exit=$?"
    ```
