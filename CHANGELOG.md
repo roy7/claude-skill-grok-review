@@ -2,6 +2,16 @@
 
 Notable changes to the grok-review plugin. Versions are pinned in `.claude-plugin/plugin.json`; installed users receive an update when that version bumps.
 
+## 0.3.7 — 2026-08-23
+
+Directed reviews: Grok reads the named files once and answers, instead of being bootstrapped as a coding agent and hunting.
+
+- **Reviewer system prompt.** The invocation now passes `--system-prompt-override` with `skills/grok-review/reviewer-system-prompt.md` — a short read-only-reviewer prompt — in place of the CLI's default autonomous-coding-agent prompt, which also injected the target repo's `CLAUDE.md` as binding rules and an ~18k skill catalog (~43k tokens) ahead of every brief. Prompt swap only; every tool/deny/env safety layer is unchanged.
+- **Directed-read brief.** The brief template now gives each pointer a line range and tells Grok to read every named path in its first tool batch, then write the verdict, with at most one extra batch for a missing cite; skill files and agent-instruction files are off-limits unless named as material.
+- **`--max-turns 6` for pre-reg / plan / design / results reviews** (30 stays for unknown-diff reviews where Grok must discover the files). A 30-turn undirected review had been observed returning 518 chars and no verdict.
+- **Measured, same brief before/after (one pre-reg review):** model loops 10 → 3, cost $0.089 → $0.040, wall-clock 5m03s → 4m20s, identical verdict and findings. The honest floor is the verdict loop itself (~3 min of reasoning on ~64k input) — expect 3–5 min per lock-grade review; the gain is cost, fewer slow-API exposures and robustness, not a 1-minute review. Corpus-packing/no-tools was evaluated and not adopted: it would not cut the reasoning floor and loses the cite-on-demand valve.
+- `--sandbox read-only` is documented as OMIT on hosts without bubblewrap: the CLI refuses to start (exit 1, 0 s) rather than degrading.
+
 ## 0.3.6 — 2026-08-18
 
 Keeps memory isolation working on current grok CLIs.
