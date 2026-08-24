@@ -2,6 +2,12 @@
 
 Notable changes to the grok-review plugin. Versions are pinned in `.claude-plugin/plugin.json`; installed users receive an update when that version bumps.
 
+## 0.3.8 — 2026-08-24
+
+Restores the turn cap that 0.3.7 cut too far.
+
+- **`--max-turns` is back to 30 for directed reviews (was 6), and 50 for unknown-diff reviews (was 30).** 0.3.7's directed-read brief and reviewer system prompt are kept — they measured 10 → 3 loops on one brief — but across a day of real use directed reviews ran 3–15 loops, and the 6-turn cap truncated reviews mid-investigation (a 12-turn cap tried in the field did too), returning findings with no verdict after spending the quota. Under 30, every review from Aug 23 (9–19 loops) completed; the single run ever to exhaust 30 was an unknown-diff review with 78 tool calls, hence 50 for that shape. Truncation is still reported, never silently retried with a bigger cap.
+
 ## 0.3.7 — 2026-08-23
 
 Directed reviews: Grok reads the named files once and answers, instead of being bootstrapped as a coding agent and hunting.
