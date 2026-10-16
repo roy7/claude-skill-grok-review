@@ -2,6 +2,13 @@
 
 Notable changes to the grok-review plugin. Versions are pinned in `.claude-plugin/plugin.json`; installed users receive an update when that version bumps.
 
+## 0.3.9 — 2026-10-16
+
+An explicit request for the kernel sandbox is no longer dropped silently.
+
+- **Asked for a sandbox, can't have one → the skill stops and asks.** On a Linux host without bubblewrap, the skill still omits `--sandbox` by default (the other three read-only layers hold) and mentions `apt install bubblewrap`. But if the user explicitly asked for a sandboxed review, it now stops, explains that the sandbox can't be enforced here, and runs without it only on the user's OK. That's the same fail-closed stance as the CLI itself, which refuses to start when `--sandbox` is passed without an enforcer (re-verified on grok 1.0.46: exit 1 in 0.4 s, "Refusing to start with denied paths unprotected"). Suggested by the plugin's author.
+- README "verified against" caveat updated to `grok 1.0.46`: about 30 headless reviews (subtitle and title translations, 2026-10-13…16) ran with the current flag set, env vars and JSON fields (`text`, `sessionId`, `stopReason`), all ending `end_turn`.
+
 ## 0.3.8 — 2026-08-24
 
 Restores the turn cap that 0.3.7 cut too far.
